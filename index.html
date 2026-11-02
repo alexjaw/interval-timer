@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121212">
+  <meta name="description" content="Interval timer that runs in the browser and works offline.">
+  <title>Interval Timer</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="title">Interval Timer</h1>
+    <button id="playPill" class="play-pill" aria-label="Start workout">
+      <span class="play-dot"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+      <span id="totalTime">00:00</span>
+    </button>
+    <button id="saveBtn" class="icon-btn" aria-label="Save workout">
+      <svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <!-- TIMER -->
+    <section id="view-timer" class="view active">
+      <div class="segmented" role="tablist">
+        <button data-mode="simple" class="seg active" role="tab">Simple</button>
+        <button data-mode="adv" class="seg" role="tab">Advanced</button>
+      </div>
+      <div id="editor" class="card"></div>
+    </section>
+
+    <!-- SAVED -->
+    <section id="view-saved" class="view">
+      <h2>Saved workouts</h2>
+      <div id="savedList"></div>
+    </section>
+
+    <!-- STATS -->
+    <section id="view-stats" class="view">
+      <h2>Statistics</h2>
+      <div id="statCards" class="stat-cards"></div>
+      <div class="card chart-card">
+        <div class="chart-title">Minutes per day · last 14 days</div>
+        <div id="chart" class="chart"></div>
+      </div>
+      <h3>History</h3>
+      <div id="historyList"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view">
+      <h2>Settings</h2>
+      <div class="card settings">
+        <label class="row"><span>Sound</span><input type="checkbox" id="setSound" class="switch"></label>
+        <label class="row"><span>Volume</span><input type="range" id="setVolume" min="0" max="1" step="0.05"></label>
+        <label class="row"><span>Countdown beeps</span>
+          <select id="setCountdown"><option value="0">Off</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+        </label>
+        <label class="row"><span>Voice cues</span><input type="checkbox" id="setVoice" class="switch"></label>
+        <label class="row"><span>Vibration</span><input type="checkbox" id="setVibrate" class="switch"></label>
+        <label class="row"><span>Keep screen on</span><input type="checkbox" id="setWake" class="switch"></label>
+        <div class="row"><span>Test sound</span><button id="testSound" class="btn small">Play</button></div>
+      </div>
+      <h3>Data</h3>
+      <div class="card settings">
+        <div class="row"><span>Export backup (JSON)</span><button id="exportBtn" class="btn small">Export</button></div>
+        <div class="row"><span>Import backup</span><button id="importBtn" class="btn small">Import</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden></div>
+        <div class="row"><span>Clear history</span><button id="clearHist" class="btn small danger">Clear</button></div>
+      </div>
+      <p class="muted center">Data is stored only on this device. <span id="version"></span></p>
+    </section>
+  </main>
+
+  <nav class="bottomnav">
+    <button data-view="timer" class="nav active"><svg viewBox="0 0 24 24"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61 1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.96 8.96 0 0 0 12 4a9 9 0 1 0 9 9c0-2.12-.74-4.07-1.97-5.61zM12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"/></svg><span>Timer</span></button>
+    <button data-view="saved" class="nav"><svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg><span>Saved</span></button>
+    <button data-view="stats" class="nav"><svg viewBox="0 0 24 24"><path d="M5 9h3v11H5zm5.5-5h3v16h-3zM16 13h3v7h-3z"/></svg><span>Stats</span></button>
+    <button data-view="settings" class="nav"><svg viewBox="0 0 24 24"><path d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.84a.5.5 0 0 0-.49.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.67 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.61.22l2.39-.96c.49.38 1.03.7 1.62.94l.36 2.54c.05.24.25.42.49.42h3.84c.24 0 .44-.18.49-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.48 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg><span>Settings</span></button>
+  </nav>
+
+  <!-- RUNNING WORKOUT -->
+  <div id="runner" class="runner" hidden>
+    <div class="run-vol">
+      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06A9 9 0 0 0 14 3.23z"/></svg>
+      <input type="range" id="runVolume" min="0" max="1" step="0.05" aria-label="Volume">
+    </div>
+    <div class="run-head">
+      <div id="runName" class="run-name"></div>
+      <div id="phaseSub" class="phase-sub"></div>
+    </div>
+    <div class="run-center" id="runCenter">
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 200 200">
+          <circle class="ring-bg" cx="100" cy="100" r="88"/>
+          <circle id="ringFg" class="ring-fg" cx="100" cy="100" r="88"/>
+        </svg>
+        <div class="ring-inner">
+          <div id="phaseLabel" class="phase-label">Get Ready</div>
+          <div id="bigTime" class="big-time">00:00</div>
+          <div id="pausedTag" class="paused-tag" hidden>PAUSED</div>
+        </div>
+      </div>
+      <div id="nextUp" class="next-up"></div>
+      <div class="run-total"><span id="runElapsed">0:00</span> elapsed · <span id="runRemaining">0:00</span> left</div>
+    </div>
+    <div class="run-controls">
+      <button id="stopBtn" class="ctl" aria-label="Stop"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zm2 2v10h10V7z"/></svg></button>
+      <button id="prevBtn" class="ctl" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+      <button id="pauseBtn" class="ctl big" aria-label="Play or pause"><svg id="pauseIcon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
+      <button id="nextBtn" class="ctl" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+      <button id="restartBtn" class="ctl" aria-label="Restart interval"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg></button>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-box">
+      <h3 id="modalTitle"></h3>
+      <div id="modalBody"></div>
+      <div id="modalBtns" class="modal-btns"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
