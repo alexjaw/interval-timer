@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 
 /* ---------- helpers ---------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -44,13 +44,15 @@ const DEFAULTS = {
       { name: 'Rest', type: 'rest', secs: 20 },
     ],
   },
-  settings: { sound: true, volume: 0.8, countdown: 3, voice: false, vibrate: true, wake: true },
+  settings: { sound: true, volume: 0.8, countdown: 0, voice: false, vibrate: true, wake: true },
 };
 const clone = o => JSON.parse(JSON.stringify(o));
 
 let cur = Object.assign({ mode: 'simple', name: '', simple: clone(DEFAULTS.simple), adv: clone(DEFAULTS.adv) },
   LS.get('it.current', {}));
 let settings = Object.assign(clone(DEFAULTS.settings), LS.get('it.settings', {}));
+// v1.1: single beep per transition by default; countdown beeps are now opt-in
+if (!settings.v11) { settings.countdown = 0; settings.v11 = true; LS.set('it.settings', settings); }
 let presets = LS.get('it.presets', []);
 let logs = LS.get('it.history', []);
 
@@ -299,9 +301,10 @@ function cancelAudio() {
 
 // Cue for the start of a step (or the end of the workout when kind === 'end')
 function cueTones(when, kind) {
-  if (kind === 'work') { tone(when, 1320, 0.55); }
-  else if (kind === 'end') { tone(when, 880, 0.25); tone(when + 0.3, 1100, 0.25); tone(when + 0.6, 1320, 0.7); }
-  else { tone(when, 660, 0.55); }
+  // exactly one beep per transition: higher when a set starts, lower when rest starts
+  if (kind === 'work') tone(when, 1320, 0.5);
+  else if (kind === 'end') tone(when, 990, 0.9);
+  else tone(when, 660, 0.5);
 }
 
 // Schedule every beep from now to the end on the audio clock, so beeps stay on time
@@ -370,7 +373,6 @@ function startWorkout(w) {
   $('#runVolume').value = settings.volume;
   setPauseIcon();
   $('#pausedTag').hidden = true;
-  if (actx) cueTones(actx.currentTime + 0.02, steps[0].kind === 'work' ? 'work' : 'rest');
   onStepStart(true, false);
   scheduleAudio();
   lockScreen();
@@ -691,7 +693,7 @@ function initSettings() {
     if (!ensureAudio()) return;
     const t = actx.currentTime + 0.05;
     const was = settings.sound; settings.sound = true;
-    tone(t, 880, 0.12, false); tone(t + 1, 880, 0.12, false); tone(t + 2, 880, 0.12, false); tone(t + 3, 1320, 0.55, false);
+    tone(t, 660, 0.5, false); tone(t + 1.2, 1320, 0.5, false);
     settings.sound = was;
     speak('Work');
   };
