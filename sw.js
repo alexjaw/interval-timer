@@ -1,5 +1,5 @@
 // Offline cache. Bump CACHE when any app file changes so phones pick up the new version.
-const CACHE = 'interval-timer-v2';
+const CACHE = 'interval-timer-v3';
 const FILES = [
   './',
   'index.html',

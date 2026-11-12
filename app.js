@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 /* ---------- helpers ---------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -275,7 +275,7 @@ function ensureAudio() {
   return actx;
 }
 
-function tone(when, freq, dur, track = true) {
+function tone(when, freq, dur, track = true, tag = '') {
   if (!actx || !settings.sound) return;
   const o = actx.createOscillator(), g = actx.createGain();
   o.type = 'sine';
@@ -288,22 +288,33 @@ function tone(when, freq, dur, track = true) {
   o.start(when);
   o.stop(when + dur + 0.02);
   if (track) {
-    const rec = { o, g };
+    const rec = { o, g, tag, when };
     scheduled.push(rec);
     o.onended = () => { g.disconnect(); scheduled = scheduled.filter(x => x !== rec); };
   }
 }
 
-function cancelAudio() {
-  scheduled.forEach(({ o, g }) => { try { o.onended = null; o.stop(); g.disconnect(); } catch { /* not started */ } });
-  scheduled = [];
+// Stop scheduled beeps. keepTag lets the finish sound play out when the workout ends.
+function cancelAudio(keepTag) {
+  scheduled.forEach(({ o, g, tag }) => {
+    if (keepTag && tag === keepTag) return;
+    try { o.onended = null; o.stop(); g.disconnect(); } catch { /* not started */ }
+  });
+  scheduled = keepTag ? scheduled.filter(r => r.tag === keepTag) : [];
+}
+
+// Finish sound: three rising notes, distinct from the single set/rest beeps
+function finishTones(when, track = true) {
+  tone(when, 784, 0.18, track, 'end');
+  tone(when + 0.2, 988, 0.18, track, 'end');
+  tone(when + 0.4, 1319, 0.8, track, 'end');
 }
 
 // Cue for the start of a step (or the end of the workout when kind === 'end')
 function cueTones(when, kind) {
   // exactly one beep per transition: higher when a set starts, lower when rest starts
   if (kind === 'work') tone(when, 1320, 0.5);
-  else if (kind === 'end') tone(when, 990, 0.9);
+  else if (kind === 'end') finishTones(when);
   else tone(when, 660, 0.5);
 }
 
@@ -500,7 +511,13 @@ function finish(completed) {
   if (completed) { run.idx = run.steps.length - 1; run.activeMs = activeMs(); run.paused = true; run.remainMs = 0; }
   run.active = false;
   clearInterval(run.timer);
-  cancelAudio();
+  if (completed && actx && settings.sound) {
+    // Keep the scheduled finish sound if it is playing now; otherwise (e.g. Next on the last set) play it right away.
+    const t = actx.currentTime;
+    const onTime = scheduled.some(r => r.tag === 'end' && r.when > t - 1.5 && r.when < t + 0.5);
+    cancelAudio(onTime ? 'end' : undefined);
+    if (!onTime) finishTones(t + 0.02, false);
+  } else cancelAudio();
   unlockScreen();
   if (!completed) { $('#runner').hidden = true; renderStats(); return; }
   vibrate([500, 150, 500]);
@@ -693,7 +710,7 @@ function initSettings() {
     if (!ensureAudio()) return;
     const t = actx.currentTime + 0.05;
     const was = settings.sound; settings.sound = true;
-    tone(t, 660, 0.5, false); tone(t + 1.2, 1320, 0.5, false);
+    tone(t, 660, 0.5, false); tone(t + 1.2, 1320, 0.5, false); finishTones(t + 2.4, false);
     settings.sound = was;
     speak('Work');
   };

@@ -9,7 +9,7 @@ A simple interval timer for workouts that runs in the browser and can be install
 - **Simple mode:** sets, get ready, time per set, rest, cool down. Rest only happens *between* sets, so 30 × 0:55 with 0:05 rest and 0:15 get ready = 30:10.
 - **Advanced mode:** your own list of intervals (name, work/rest, time) repeated for N rounds, with optional rest between rounds, get ready and cool down.
 - **Running screen:** large countdown, colour per phase (get ready = amber, work = green, rest = red, cool down = blue), set/round counter, what's next, total progress. Tap the time to pause. Buttons for previous, pause, next and stop.
-- **Sound:** one beep when a set ends (rest starts) and one beep when rest ends (next set starts), lower and higher pitch. Optional countdown beeps for the last 1–5 seconds can be turned on in Settings. The beeps are scheduled on the Web Audio clock, so they stay on time even if the browser slows down JavaScript.
+- **Sound:** one beep when a set ends (rest starts) and one beep when rest ends (next set starts), lower and higher pitch. The end of the workout gets its own sound: three short rising notes. Optional countdown beeps for the last 1–5 seconds can be turned on in Settings. The beeps are scheduled on the Web Audio clock, so they stay on time even if the browser slows down JavaScript.
 - **Optional voice cues** ("Work", "Rest") and vibration.
 - **Keeps the screen on** during a workout (Screen Wake Lock).
 - **Saved workouts:** save the current setup by name, load it again, or start it straight from the list.
