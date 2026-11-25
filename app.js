@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 /* ---------- helpers ---------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -295,12 +295,25 @@ function tone(when, freq, dur, track = true, tag = '') {
 }
 
 // Stop scheduled beeps. keepTag lets the finish sound play out when the workout ends.
-function cancelAudio(keepTag) {
-  scheduled.forEach(({ o, g, tag }) => {
-    if (keepTag && tag === keepTag) return;
-    try { o.onended = null; o.stop(); g.disconnect(); } catch { /* not started */ }
+function cancelAudio(keepTag, keepBefore = -Infinity) {
+  const keep = r => (keepTag && r.tag === keepTag) || r.when <= keepBefore;
+  scheduled.forEach(r => {
+    if (keep(r)) return;
+    try { r.o.onended = null; r.o.stop(); r.g.disconnect(); } catch { /* not started */ }
   });
-  scheduled = keepTag ? scheduled.filter(r => r.tag === keepTag) : [];
+  scheduled = scheduled.filter(keep);
+}
+
+// Offset (s) such that: audio-context time = wall-clock ms / 1000 + offset, for the moment a sound is HEARD.
+// Uses getOutputTimestamp when available (includes output latency), else currentTime minus outputLatency.
+function audioOffset() {
+  const wallMinusPerf = Date.now() - performance.now();
+  if (actx.getOutputTimestamp) {
+    const ts = actx.getOutputTimestamp();
+    if (ts && ts.performanceTime > 0 && ts.contextTime > 0)
+      return ts.contextTime - (ts.performanceTime + wallMinusPerf) / 1000;
+  }
+  return actx.currentTime - Date.now() / 1000 - (actx.outputLatency || 0);
 }
 
 // Finish sound: three rising notes, distinct from the single set/rest beeps
@@ -320,11 +333,13 @@ function cueTones(when, kind) {
 
 // Schedule every beep from now to the end on the audio clock, so beeps stay on time
 // even if the browser throttles JavaScript while the screen is off.
-function scheduleAudio() {
-  cancelAudio();
+function scheduleAudio(resync = false) {
+  // On a resync, leave beeps that are already sounding (or due within 80 ms) alone so they aren't cut off.
+  cancelAudio(undefined, resync && actx ? actx.currentTime + 0.08 : -Infinity);
   if (!actx || !settings.sound || run.paused) return;
-  const nowWall = Date.now();
-  const offset = actx.currentTime - nowWall / 1000;
+  const nowWall = Date.now() + (resync ? 80 : 0);
+  const offset = audioOffset();
+  run.audioOffset = offset;
   const at = ms => ms / 1000 + offset;
   let end = run.endAt;
   for (let i = run.idx; i < run.steps.length; i++) {
@@ -429,6 +444,10 @@ function tick() {
     }
     // only give voice/vibration cues if we're not catching up after a long freeze
     if (advanced) onStepStart(now - (run.endAt - run.steps[run.idx].secs * 1000) < 1500);
+    // The audio clock and the system clock drift apart (and Android can stall the audio clock).
+    // Re-time the upcoming beeps whenever they disagree by more than 40 ms.
+    if (actx && settings.sound && actx.state === 'running' && run.audioOffset != null &&
+        Math.abs(audioOffset() - run.audioOffset) > 0.04) scheduleAudio(true);
   }
   render(now);
 }
