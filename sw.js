@@ -1,9 +1,11 @@
-// Offline cache. Bump CACHE when any app file changes so phones pick up the new version.
-const CACHE = 'interval-timer-v4';
+// Offline cache, named after the app version in version.js, so bumping the version refreshes it.
+importScripts('version.js');
+const CACHE = `interval-timer-${self.APP_VERSION}`;
 const FILES = [
   './',
   'index.html',
   'style.css',
+  'version.js',
   'app.js',
   'manifest.webmanifest',
   'icons/icon.svg',

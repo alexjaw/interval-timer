@@ -35,7 +35,8 @@ Repo → **Settings → Pages** → Source: *Deploy from a branch* → Branch: `
 | `index.html` | Markup for all views |
 | `style.css` | Dark theme styling |
 | `app.js` | Editor, timer engine, audio, saved workouts, stats, settings |
-| `sw.js` | Service worker for offline use (bump `CACHE` when you change files) |
+| `version.js` | App version (single source of truth) |
+| `sw.js` | Service worker for offline use; cache is named after the version |
 | `manifest.webmanifest` | PWA metadata and icons |
 | `icons/` | App icons |
 
@@ -49,3 +50,11 @@ Stored in `localStorage` under the keys `it.current`, `it.presets`, `it.history`
 python3 -m http.server 8000
 # open http://localhost:8000
 ```
+
+## Releasing a new version
+
+1. Bump `APP_VERSION` in `version.js` (e.g. `1.4.0` → `1.5.0`).
+2. Add a `## v1.5.0` section to `CHANGELOG.md`.
+3. Push to `main`. The workflow in `.github/workflows/release.yml` creates the tag `v1.5.0` and a GitHub release with the changelog notes.
+
+The Settings screen shows the same version and links to that release, and the new cache name makes installed apps pick up the update.

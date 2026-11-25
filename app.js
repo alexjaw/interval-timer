@@ -1,6 +1,7 @@
 'use strict';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = self.APP_VERSION || 'dev';  // defined in version.js
+const REPO_URL = 'https://github.com/alexjaw/interval-timer';
 
 /* ---------- helpers ---------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -771,7 +772,9 @@ function initSettings() {
       buttons: [{ label: 'Cancel', value: false }, { label: 'Clear', value: true, cls: 'danger' }] });
     if (ok) { logs = []; saveHistory(); renderStats(); }
   };
-  $('#version').textContent = `v${APP_VERSION}`;
+  const v = $('#version');
+  v.textContent = `v${APP_VERSION}`;
+  v.href = `${REPO_URL}/releases/tag/v${APP_VERSION}`;
 }
 
 /* ---------- toast ---------- */
